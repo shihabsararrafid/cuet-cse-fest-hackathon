@@ -84,12 +84,6 @@ jobs:
           # Fail build if vulnerabilities found
           args: --severity-threshold=high
 
-      - name: Upload Snyk results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: snyk.sarif
-
   # Job 3: Trivy - Container Image Scanning
   trivy:
     name: Trivy Container Scan
