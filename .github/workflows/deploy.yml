@@ -102,3 +102,49 @@ jobs:
           else
             echo "❌ Deployment notification: FAILED"
           fi
+
+      - name: Slack Notification - Success
+        if: success()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: deployments
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_ICON: https://github.com/rtCamp.png?size=48
+          SLACK_MESSAGE: |
+            Deployment completed successfully! :rocket:
+
+            *Repository:* ${{ github.repository }}
+            *Branch:* ${{ github.ref_name }}
+            *Commit:* ${{ github.sha }}
+            *Triggered by:* ${{ github.actor }}
+
+            *Deployed Image:*
+            `ghcr.io/${{ github.repository_owner }}/cuet-micro-ops-hackathon:latest`
+
+            *URL:* http://${{ secrets.VPS_HOST }}
+          SLACK_TITLE: Deployment Successful ✅
+          SLACK_USERNAME: GitHub Actions
+          SLACK_FOOTER: CUET Micro-Ops Hackathon 2025
+
+      - name: Slack Notification - Failure
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: deployments
+          SLACK_COLOR: danger
+          SLACK_ICON: https://github.com/rtCamp.png?size=48
+          SLACK_MESSAGE: |
+            Deployment failed! :x:
+
+            *Repository:* ${{ github.repository }}
+            *Branch:* ${{ github.ref_name }}
+            *Commit:* ${{ github.sha }}
+            *Triggered by:* ${{ github.actor }}
+
+            *Error:* Check the workflow logs for details
+            *Workflow Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_TITLE: Deployment Failed ❌
+          SLACK_USERNAME: GitHub Actions
+          SLACK_FOOTER: CUET Micro-Ops Hackathon 2025
