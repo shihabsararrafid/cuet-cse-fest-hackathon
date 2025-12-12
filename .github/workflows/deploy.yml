@@ -1,22 +1,10 @@
 name: Deploy to VPS
-
 on:
   workflow_run:
-    workflows: ["CID"]
+    workflows: ["CI"]
     types:
       - completed
     branches: [main, master]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Deployment environment"
-        required: true
-        default: "production"
-        type: choice
-        options:
-          - production
-          - staging
-
 jobs:
   deploy:
     name: Deploy to Production VPS
@@ -25,15 +13,6 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     steps:
-      - name: Deployment started
-        run: |
-          echo "### 🚀 Deployment Started" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** Production VPS" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -47,28 +26,8 @@ jobs:
 
             echo "🔄 Starting deployment..."
 
-            # Navigate to app directory
-            cd /opt/apps/cuet-micro-ops-hackthon-2025 || exit 1
-
-            # Pull latest code (for docker-compose.yml updates)
-            echo "📥 Pulling latest code..."
-            git pull origin main
-
-            # Login to GitHub Container Registry
-            echo "🔐 Logging in to GitHub Container Registry..."
-            echo "${{ secrets.PERSONAL_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-
-            # Pull latest Docker images
-            echo "🐳 Pulling latest Docker images..."
-            docker-compose -f docker/compose.prod.yml pull
-
-            # Stop old containers
-            echo "🛑 Stopping old containers..."
-            docker-compose -f docker/compose.prod.yml down
-
-            # Start new containers
-            echo "🚀 Starting new containers..."
-            docker-compose -f docker/compose.prod.yml up -d
+            # run the script
+            ./start-server.sh
 
             # Wait for application to start
             echo "⏳ Waiting for application to start..."
