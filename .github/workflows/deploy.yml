@@ -5,7 +5,7 @@ on:
     types:
       - completed
     branches: [main, master]
-  workflow_dispatch:  # Allow manual triggers
+  workflow_dispatch: # Allow manual triggers
 
 jobs:
   deploy:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     # Only deploy if CI workflow succeeded or manual trigger
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
-    
+
     steps:
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -26,18 +26,18 @@ jobs:
           script: |
             set -e
             echo "🔄 Starting deployment..."
-            
-          
 
-            
+
+
+
             # Make script executable and run it
             chmod +x start-server.sh
             ./start-server.sh
-            
+
             # Wait for application to start
             echo "⏳ Waiting for application to start..."
             sleep 15
-            
+
             # Health check
             echo "🏥 Running health check..."
             if curl -f http://localhost:3000/health; then
@@ -46,15 +46,15 @@ jobs:
               echo "❌ Health check failed!"
               exit 1
             fi
-            
+
             # Show running containers
             echo "📊 Running containers:"
             docker ps
-            
+
             # Cleanup old images
             echo "🧹 Cleaning up old Docker images..."
             docker image prune -af --filter "until=24h" || true
-            
+
             echo "✅ Deployment completed successfully!"
 
       - name: Deployment summary
