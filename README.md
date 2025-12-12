@@ -773,6 +773,7 @@ We use three complementary security scanners:
 **Cost:** Free for public repos
 
 **Example vulnerability detected:**
+
 ```typescript
 // 🚨 CodeQL would flag this as SQL Injection
 const query = `SELECT * FROM users WHERE id=${userId}`;
@@ -787,15 +788,17 @@ db.execute(query);
 **Cost:** Free tier (200 tests/month)
 
 **Example vulnerability detected:**
+
 ```json
 {
   "dependencies": {
-    "axios": "0.21.0"  // 🚨 Snyk: CVE-2021-3749 (SSRF vulnerability)
+    "axios": "0.21.0" // 🚨 Snyk: CVE-2021-3749 (SSRF vulnerability)
   }
 }
 ```
 
 **Setup Required:**
+
 1. Sign up at [snyk.io](https://app.snyk.io/)
 2. Get your API token
 3. Add `SNYK_TOKEN` to GitHub Secrets:
@@ -811,6 +814,7 @@ db.execute(query);
 **Cost:** Free and open source
 
 **Example vulnerability detected:**
+
 ```dockerfile
 FROM node:18-alpine
 # 🚨 Trivy: Base image has CVE-2023-XXXX in OpenSSL
@@ -828,34 +832,38 @@ Security scans run automatically:
 ### Viewing Security Results
 
 #### Option 1: GitHub Security Tab
+
 1. Go to your repo → **Security** tab
 2. Click **Code scanning alerts**
 3. View detailed vulnerability reports
 4. See suggested fixes and remediation steps
 
 #### Option 2: Workflow Logs
+
 1. Go to **Actions** tab
 2. Click on "Security Scanning" workflow
 3. View individual scanner results (CodeQL, Snyk, Trivy)
 4. Download Trivy report artifact
 
 #### Option 3: Pull Request Comments
+
 - Security scanners automatically comment on PRs
 - Shows vulnerabilities introduced by the PR
 - Blocks merge if critical issues found
 
 ### Severity Levels
 
-| Level | Description | Action |
-|-------|-------------|--------|
+| Level        | Description                 | Action                           |
+| ------------ | --------------------------- | -------------------------------- |
 | **Critical** | Immediate exploitation risk | **MUST FIX** - Blocks deployment |
-| **High** | Serious vulnerability | Fix within 7 days |
-| **Medium** | Moderate risk | Fix within 30 days |
-| **Low** | Minor issue | Fix when convenient |
+| **High**     | Serious vulnerability       | Fix within 7 days                |
+| **Medium**   | Moderate risk               | Fix within 30 days               |
+| **Low**      | Minor issue                 | Fix when convenient              |
 
 ### Handling Security Alerts
 
 #### 1. Dependency Vulnerabilities (Snyk)
+
 ```bash
 # View vulnerabilities
 npm audit
@@ -871,12 +879,14 @@ npm install axios@latest
 ```
 
 #### 2. Code Vulnerabilities (CodeQL)
+
 - Review the alert in GitHub Security tab
 - Click "Show more details" for remediation advice
 - Fix the code according to recommendations
 - Re-run the security scan
 
 #### 3. Image Vulnerabilities (Trivy)
+
 ```bash
 # Update base image
 FROM node:24-slim  # Use latest version
@@ -888,6 +898,7 @@ FROM gcr.io/distroless/nodejs24-debian12
 ### Security Best Practices
 
 1. **Never commit secrets**
+
    ```bash
    # ❌ Bad
    const API_KEY = "sk-1234567890"
@@ -897,6 +908,7 @@ FROM gcr.io/distroless/nodejs24-debian12
    ```
 
 2. **Keep dependencies updated**
+
    ```bash
    # Check for updates weekly
    npm outdated
@@ -904,19 +916,21 @@ FROM gcr.io/distroless/nodejs24-debian12
    ```
 
 3. **Use parameterized queries**
+
    ```typescript
    // ❌ Bad - SQL Injection risk
-   db.query(`SELECT * FROM users WHERE id=${userId}`)
+   db.query(`SELECT * FROM users WHERE id=${userId}`);
 
    // ✅ Good - Parameterized query
-   db.query('SELECT * FROM users WHERE id=?', [userId])
+   db.query("SELECT * FROM users WHERE id=?", [userId]);
    ```
 
 4. **Validate user input**
+
    ```typescript
    // ✅ Use Zod schemas (already in this project!)
    const schema = z.object({
-     userId: z.number().int().positive()
+     userId: z.number().int().positive(),
    });
    const validated = schema.parse(req.body);
    ```
@@ -938,24 +952,24 @@ If you need to temporarily disable a scanner:
 
 # Disable CodeQL
 codeql:
-  if: false  # Add this line
+  if: false # Add this line
 
 # Disable Snyk
 snyk:
-  if: false  # Add this line
+  if: false # Add this line
 
 # Disable Trivy
 trivy:
-  if: false  # Add this line
+  if: false # Add this line
 ```
 
 ### Cost Considerations
 
-| Scanner | Free Tier | Paid Plans |
-|---------|-----------|------------|
-| CodeQL | ✅ Unlimited (public repos) | $21/user/month (private) |
-| Snyk | ✅ 200 tests/month | $52/month (Team) |
-| Trivy | ✅ Unlimited (open source) | N/A |
+| Scanner | Free Tier                   | Paid Plans               |
+| ------- | --------------------------- | ------------------------ |
+| CodeQL  | ✅ Unlimited (public repos) | $21/user/month (private) |
+| Snyk    | ✅ 200 tests/month          | $52/month (Team)         |
+| Trivy   | ✅ Unlimited (open source)  | N/A                      |
 
 **For this hackathon:** All scanners work on the free tier! 🎉
 
