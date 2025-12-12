@@ -1,4 +1,4 @@
-import { PerformanceMetric } from './Dashboard';
+import { PerformanceMetric } from "./Dashboard";
 import {
   LineChart,
   Line,
@@ -8,16 +8,19 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+} from "recharts";
 
 interface PerformanceMetricsProps {
   metrics: PerformanceMetric[];
   onClear: () => void;
 }
 
-export function PerformanceMetrics({ metrics, onClear }: PerformanceMetricsProps) {
-  const successCount = metrics.filter((m) => m.status === 'success').length;
-  const failureCount = metrics.filter((m) => m.status === 'failure').length;
+export function PerformanceMetrics({
+  metrics,
+  onClear,
+}: PerformanceMetricsProps) {
+  const successCount = metrics.filter((m) => m.status === "success").length;
+  const failureCount = metrics.filter((m) => m.status === "failure").length;
   const avgDuration =
     metrics.length > 0
       ? metrics.reduce((acc, m) => acc + m.duration, 0) / metrics.length
@@ -26,7 +29,7 @@ export function PerformanceMetrics({ metrics, onClear }: PerformanceMetricsProps
   const chartData = metrics.slice(-20).map((m, index) => ({
     index: index + 1,
     duration: Math.round(m.duration),
-    name: m.endpoint.split('/').pop() || 'unknown',
+    name: m.endpoint.split("/").pop() || "unknown",
   }));
 
   return (
@@ -65,10 +68,23 @@ export function PerformanceMetrics({ metrics, onClear }: PerformanceMetricsProps
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="index" label={{ value: 'Request #', position: 'insideBottom', offset: -5 }} />
-              <YAxis label={{ value: 'Duration (ms)', angle: -90, position: 'insideLeft' }} />
+              <XAxis
+                dataKey="index"
+                label={{
+                  value: "Request #",
+                  position: "insideBottom",
+                  offset: -5,
+                }}
+              />
+              <YAxis
+                label={{
+                  value: "Duration (ms)",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+              />
               <Tooltip
-                formatter={(value: number) => [`${value}ms`, 'Duration']}
+                formatter={(value: number) => [`${value}ms`, "Duration"]}
                 labelFormatter={(label) => `Request #${label}`}
               />
               <Legend />

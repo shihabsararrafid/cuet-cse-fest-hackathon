@@ -1,17 +1,17 @@
-import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
-import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
-import { DocumentLoadInstrumentation } from '@opentelemetry/instrumentation-document-load';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-web';
-import { ZoneContextManager } from '@opentelemetry/context-zone';
-import { Resource } from '@opentelemetry/resources';
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
-import { trace, context } from '@opentelemetry/api';
+import { WebTracerProvider } from "@opentelemetry/sdk-trace-web";
+import { registerInstrumentations } from "@opentelemetry/instrumentation";
+import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch";
+import { DocumentLoadInstrumentation } from "@opentelemetry/instrumentation-document-load";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-web";
+import { ZoneContextManager } from "@opentelemetry/context-zone";
+import { Resource } from "@opentelemetry/resources";
+import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
+import { trace, context } from "@opentelemetry/api";
 
 // Create a resource
 const resource = new Resource({
-  [ATTR_SERVICE_NAME]: 'observability-dashboard',
+  [ATTR_SERVICE_NAME]: "observability-dashboard",
 });
 
 // Initialize the tracer provider
@@ -21,7 +21,9 @@ const provider = new WebTracerProvider({
 
 // Configure OTLP exporter
 const exporter = new OTLPTraceExporter({
-  url: import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+  url:
+    import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT ||
+    "http://localhost:4318/v1/traces",
 });
 
 // Add batch span processor
@@ -40,11 +42,11 @@ registerInstrumentations({
       clearTimingResources: true,
       applyCustomAttributesOnSpan: (span, request, result) => {
         if (request instanceof Request) {
-          span.setAttribute('http.url', request.url);
-          span.setAttribute('http.method', request.method);
+          span.setAttribute("http.url", request.url);
+          span.setAttribute("http.method", request.method);
         }
         if (result instanceof Response) {
-          span.setAttribute('http.status_code', result.status);
+          span.setAttribute("http.status_code", result.status);
         }
       },
     }),
@@ -53,13 +55,13 @@ registerInstrumentations({
 });
 
 // Export tracer for manual instrumentation
-export const tracer = trace.getTracer('observability-dashboard');
+export const tracer = trace.getTracer("observability-dashboard");
 
 // Helper function to create custom spans
 export function createSpan<T>(
   name: string,
   fn: () => Promise<T> | T,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Promise<T> {
   return tracer.startActiveSpan(name, async (span) => {
     if (attributes) {
@@ -77,7 +79,9 @@ export function createSpan<T>(
         code: 2, // ERROR
         message: error instanceof Error ? error.message : String(error),
       });
-      span.recordException(error instanceof Error ? error : new Error(String(error)));
+      span.recordException(
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     } finally {
       span.end();
@@ -98,7 +102,10 @@ export function getCurrentSpanId(): string | undefined {
 }
 
 // Create a context-aware wrapper for async functions
-export function withTracing<T>(name: string, attributes?: Record<string, string | number | boolean>) {
+export function withTracing<T>(
+  name: string,
+  attributes?: Record<string, string | number | boolean>,
+) {
   return (fn: () => Promise<T> | T): Promise<T> => {
     return createSpan(name, fn, attributes);
   };

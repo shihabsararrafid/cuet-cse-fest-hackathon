@@ -1,5 +1,5 @@
-import React, { Component, ReactNode } from 'react';
-import * as Sentry from '@sentry/react';
+import React, { Component, ReactNode } from "react";
+import * as Sentry from "@sentry/react";
 
 interface Props {
   children: ReactNode;
@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
       },
     });
 
-    console.error('Error caught by boundary:', error, errorInfo);
+    console.error("Error caught by boundary:", error, errorInfo);
   }
 
   handleReset = () => {
@@ -51,33 +51,39 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div
           style={{
-            padding: '2rem',
-            maxWidth: '600px',
-            margin: '2rem auto',
-            textAlign: 'center',
-            background: '#fff3f3',
-            border: '2px solid #dc3545',
-            borderRadius: '8px',
+            padding: "2rem",
+            maxWidth: "600px",
+            margin: "2rem auto",
+            textAlign: "center",
+            background: "#fff3f3",
+            border: "2px solid #dc3545",
+            borderRadius: "8px",
           }}
         >
-          <h1 style={{ color: '#dc3545' }}>Something went wrong</h1>
-          <p style={{ color: '#666', margin: '1rem 0' }}>
+          <h1 style={{ color: "#dc3545" }}>Something went wrong</h1>
+          <p style={{ color: "#666", margin: "1rem 0" }}>
             {this.state.error?.message ||
-              'An unexpected error occurred in the application.'}
+              "An unexpected error occurred in the application."}
           </p>
-          <p style={{ fontSize: '0.9rem', color: '#999', marginBottom: '1.5rem' }}>
+          <p
+            style={{
+              fontSize: "0.9rem",
+              color: "#999",
+              marginBottom: "1.5rem",
+            }}
+          >
             This error has been logged to Sentry for analysis.
           </p>
           <button
             onClick={this.handleReset}
             style={{
-              padding: '0.75rem 1.5rem',
-              background: '#0066cc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '1rem',
+              padding: "0.75rem 1.5rem",
+              background: "#0066cc",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "1rem",
             }}
           >
             Try Again

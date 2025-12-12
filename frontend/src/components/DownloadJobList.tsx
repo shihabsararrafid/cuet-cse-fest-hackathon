@@ -1,4 +1,4 @@
-import { DownloadJob } from '../api';
+import { DownloadJob } from "../api";
 
 interface DownloadJobListProps {
   jobs: DownloadJob[];
@@ -9,7 +9,9 @@ export function DownloadJobList({ jobs }: DownloadJobListProps) {
     <div className="download-jobs">
       <h2>Download Jobs</h2>
       {jobs.length === 0 ? (
-        <p className="empty-state">No download jobs yet. Click a button above to start.</p>
+        <p className="empty-state">
+          No download jobs yet. Click a button above to start.
+        </p>
       ) : (
         <div className="jobs-list">
           {jobs.map((job, index) => (
@@ -33,13 +35,14 @@ export function DownloadJobList({ jobs }: DownloadJobListProps) {
                 )}
                 {job.processingTimeMs && (
                   <div className="job-detail">
-                    <strong>Processing Time:</strong>{' '}
+                    <strong>Processing Time:</strong>{" "}
                     {(job.processingTimeMs / 1000).toFixed(2)}s
                   </div>
                 )}
                 {job.size && (
                   <div className="job-detail">
-                    <strong>Size:</strong> {(job.size / 1024 / 1024).toFixed(2)} MB
+                    <strong>Size:</strong> {(job.size / 1024 / 1024).toFixed(2)}{" "}
+                    MB
                   </div>
                 )}
                 {job.message && (

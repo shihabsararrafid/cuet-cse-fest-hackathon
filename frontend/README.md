@@ -5,6 +5,7 @@ A React-based observability dashboard that integrates with Sentry for error trac
 ## Features
 
 ### 1. Sentry Integration
+
 - **Error Boundary**: Wraps the entire application to catch and report React errors
 - **Automatic Error Capture**: All failed API calls are automatically logged to Sentry
 - **User Feedback Dialog**: Provides context for errors when they occur
@@ -12,6 +13,7 @@ A React-based observability dashboard that integrates with Sentry for error trac
 - **Trace Correlation**: All Sentry errors are tagged with OpenTelemetry trace IDs
 
 ### 2. OpenTelemetry Integration
+
 - **Distributed Tracing**: Full trace propagation from frontend to backend
 - **Custom Spans**: User interactions and API calls create custom spans
 - **Fetch Instrumentation**: Automatic instrumentation of all HTTP requests
@@ -21,33 +23,39 @@ A React-based observability dashboard that integrates with Sentry for error trac
 ### 3. Dashboard Features
 
 #### Health Status
+
 - Real-time API health monitoring
 - Storage service status checking
 - Auto-refreshes every 5 seconds
 
 #### Download Jobs
+
 - List of all initiated downloads
 - Shows job status, processing time, file size
 - Download links when files are ready
 
 #### Error Log
+
 - Recent errors with timestamps
 - HTTP status codes
 - Trace IDs for correlation
 - Automatic Sentry capture
 
 #### Trace Viewer
+
 - Direct links to Jaeger UI
 - Frontend and backend trace filtering
 - End-to-end trace correlation
 
 #### Performance Metrics
+
 - Total request count
 - Success/failure rates
 - Average response time
 - Response time trend chart (last 20 requests)
 
 ### 4. Correlation
+
 The dashboard ensures end-to-end traceability:
 
 ```
@@ -69,6 +77,7 @@ Errors in Sentry tagged with: trace_id=abc123
 ## Setup
 
 ### Prerequisites
+
 - Node.js >= 24.10.0
 - npm >= 10.x
 - Running backend API (see main README)
@@ -77,16 +86,19 @@ Errors in Sentry tagged with: trace_id=abc123
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Create `.env` file:
+
 ```bash
 cp .env.example .env
 ```
 
 3. Configure environment variables in `.env`:
+
 ```env
 # API Configuration
 VITE_API_BASE_URL=http://localhost:3000
@@ -105,6 +117,7 @@ VITE_JAEGER_URL=http://localhost:16686
 ### Development
 
 Run the development server:
+
 ```bash
 npm run dev
 ```
@@ -114,11 +127,13 @@ The dashboard will be available at http://localhost:5173
 ### Production Build
 
 Build for production:
+
 ```bash
 npm run build
 ```
 
 Preview production build:
+
 ```bash
 npm run preview
 ```
@@ -128,11 +143,13 @@ npm run preview
 ### Build and Run with Docker
 
 Build the Docker image:
+
 ```bash
 docker build -t observability-dashboard .
 ```
 
 Run the container:
+
 ```bash
 docker run -p 5173:80 observability-dashboard
 ```
@@ -140,17 +157,20 @@ docker run -p 5173:80 observability-dashboard
 ### Run with Docker Compose
 
 From the project root directory:
+
 ```bash
 npm run docker:dev
 ```
 
 This will start:
+
 - Backend API (port 3000)
 - Frontend Dashboard (port 5173)
 - Jaeger UI (port 16686)
 - MinIO S3 (port 9000, 9001)
 
 Access the services:
+
 - **Dashboard**: http://localhost:5173
 - **API**: http://localhost:3000
 - **Jaeger UI**: http://localhost:16686
@@ -165,6 +185,7 @@ Access the services:
    - Copy the DSN (Data Source Name)
 
 3. Add the DSN to your `.env` file:
+
 ```env
 VITE_SENTRY_DSN=https://your-key@o12345.ingest.sentry.io/67890
 ```
@@ -193,6 +214,7 @@ VITE_SENTRY_DSN=https://your-key@o12345.ingest.sentry.io/67890
 ### Correlating Errors with Traces
 
 When an error occurs:
+
 1. Check the Error Log section for the trace ID
 2. Copy the trace ID
 3. Open Jaeger UI
@@ -202,6 +224,7 @@ When an error occurs:
 ## Architecture
 
 ### Frontend Stack
+
 - **React 18**: UI framework
 - **TypeScript**: Type safety
 - **Vite**: Build tool and dev server
@@ -210,12 +233,14 @@ When an error occurs:
 - **@opentelemetry/sdk-trace-web**: Distributed tracing
 
 ### Observability Stack
+
 - **Sentry**: Error tracking and performance monitoring
 - **OpenTelemetry**: Distributed tracing standard
 - **Jaeger**: Trace collection and visualization
 - **W3C Trace Context**: Trace propagation standard
 
 ### Key Files
+
 - `src/instrumentation.ts`: OpenTelemetry setup and tracer configuration
 - `src/sentry.ts`: Sentry initialization with trace correlation
 - `src/api.ts`: API client with automatic tracing and error capture
@@ -235,6 +260,7 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 Or click the "Trigger Sentry Test" button in the dashboard.
 
 This will:
+
 1. Trigger an intentional error in the backend
 2. Capture the error in the frontend
 3. Log it to Sentry with trace correlation
@@ -245,11 +271,13 @@ This will:
 ### Traces not appearing in Jaeger
 
 1. Verify Jaeger is running:
+
 ```bash
 curl http://localhost:16686
 ```
 
 2. Check OTLP endpoint:
+
 ```bash
 curl http://localhost:4318/v1/traces
 ```
@@ -294,6 +322,7 @@ curl http://localhost:4318/v1/traces
 ## Browser Support
 
 Tested and working on:
+
 - Chrome 120+
 - Firefox 120+
 - Safari 17+

@@ -1,5 +1,5 @@
 export function TraceViewer() {
-  const jaegerUrl = import.meta.env.VITE_JAEGER_URL || 'http://localhost:16686';
+  const jaegerUrl = import.meta.env.VITE_JAEGER_URL || "http://localhost:16686";
 
   return (
     <div className="trace-viewer">

@@ -9,6 +9,7 @@ This solution implements a comprehensive observability dashboard that integrates
 ### 1. React Application (`frontend/` directory)
 
 A complete React application built with:
+
 - **Vite** for fast development and optimized production builds
 - **TypeScript** for type safety
 - **Sentry React SDK** for error tracking and performance monitoring
@@ -61,6 +62,7 @@ A complete React application built with:
 #### Trace Correlation
 
 All Sentry events include the OpenTelemetry trace ID:
+
 ```typescript
 beforeSend(event, hint) {
   const traceId = getCurrentTraceId();
@@ -105,22 +107,25 @@ beforeSend(event, hint) {
 #### Trace Context Propagation
 
 Headers added to all API requests:
+
 ```typescript
 const traceId = getCurrentTraceId();
 if (traceId) {
-  headers['x-trace-id'] = traceId;
+  headers["x-trace-id"] = traceId;
 }
 ```
 
 ### 4. Dashboard Features
 
 #### Health Status
+
 - Real-time health checks every 5 seconds
 - Storage connectivity status
 - Visual status badges
 - Automatic retry on failure
 
 #### Download Jobs
+
 - Job ID tracking
 - Status monitoring (queued/processing/completed/failed)
 - Processing time display
@@ -128,6 +133,7 @@ if (traceId) {
 - Download links when ready
 
 #### Error Log
+
 - Chronological error list
 - Timestamp for each error
 - HTTP status codes
@@ -135,6 +141,7 @@ if (traceId) {
 - Automatic pruning (keeps last 50)
 
 #### Trace Viewer
+
 - Direct links to Jaeger UI
 - Service-specific filtering
 - Frontend trace search
@@ -142,6 +149,7 @@ if (traceId) {
 - Correlation guidance
 
 #### Performance Metrics
+
 - Total request counter
 - Success/failure rates
 - Average response time
@@ -204,17 +212,20 @@ Result: Can search Jaeger by trace_id to see full flow,
 ### Quick Start
 
 1. **Install Frontend Dependencies**
+
 ```bash
 cd frontend
 npm install
 ```
 
 2. **Configure Environment**
+
 ```bash
 cp frontend/.env.example frontend/.env
 ```
 
 Edit `frontend/.env`:
+
 ```env
 VITE_API_BASE_URL=http://localhost:3000
 VITE_SENTRY_DSN=https://your-sentry-dsn-here  # Optional
@@ -223,18 +234,21 @@ VITE_JAEGER_URL=http://localhost:16686
 ```
 
 3. **Run Full Stack with Docker**
+
 ```bash
 # From project root
 npm run docker:dev
 ```
 
 This starts:
+
 - Backend API (http://localhost:3000)
 - Frontend Dashboard (http://localhost:5173)
 - Jaeger UI (http://localhost:16686)
 - MinIO S3 Storage (http://localhost:9000)
 
 4. **Or Run Frontend in Development Mode**
+
 ```bash
 # Terminal 1: Start backend
 npm run start
@@ -255,6 +269,7 @@ npm run dev
 
 2. **Configure Sentry DSN**
    - Add DSN to `frontend/.env`:
+
    ```env
    VITE_SENTRY_DSN=https://your-key@o12345.ingest.sentry.io/67890
    ```
@@ -270,6 +285,7 @@ npm run dev
 ### 1. Test Sentry Error Tracking
 
 **Via Dashboard:**
+
 ```
 1. Open http://localhost:5173
 2. Click "Trigger Sentry Test"
@@ -280,6 +296,7 @@ npm run dev
 ```
 
 **Via API:**
+
 ```bash
 curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
   -H "Content-Type: application/json" \
@@ -289,6 +306,7 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 ### 2. Test OpenTelemetry Tracing
 
 **View Traces:**
+
 ```
 1. Open http://localhost:5173
 2. Click "Initiate Download"
@@ -301,6 +319,7 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 ```
 
 **Verify Trace Propagation:**
+
 ```
 1. Make any API request from dashboard
 2. Check browser DevTools Network tab
@@ -312,6 +331,7 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 ### 3. Test Correlation
 
 **Error-to-Trace Correlation:**
+
 ```
 1. Trigger an error (any failed API call or Sentry test)
 2. Copy trace ID from Error Log
@@ -325,6 +345,7 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 ### 4. Test Performance Monitoring
 
 **Verify Metrics Collection:**
+
 ```
 1. Make several API requests
 2. Check Performance Metrics section
@@ -338,6 +359,7 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 ### Technology Stack
 
 **Frontend:**
+
 - React 18.3 with TypeScript
 - Vite 6.0 (build tool)
 - @sentry/react 8.47.0
@@ -345,11 +367,13 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 - recharts 2.15.0
 
 **Backend (existing):**
+
 - Node.js 24 with Hono framework
 - @opentelemetry/sdk-node
 - @hono/sentry
 
 **Infrastructure:**
+
 - Jaeger (trace collection/visualization)
 - MinIO (S3-compatible storage)
 - Docker Compose (orchestration)
@@ -393,7 +417,7 @@ export function getCurrentTraceId(): string | undefined {
 // api.ts - Add to request headers
 const traceId = getCurrentTraceId();
 if (traceId) {
-  headers['x-trace-id'] = traceId;
+  headers["x-trace-id"] = traceId;
 }
 ```
 
@@ -420,7 +444,7 @@ beforeSend(event, hint) {
 export function createSpan<T>(
   name: string,
   fn: () => Promise<T> | T,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Promise<T> {
   return tracer.startActiveSpan(name, async (span) => {
     if (attributes) {
@@ -471,6 +495,7 @@ if (!response.ok) {
 ### Updated compose.dev.yml
 
 Added frontend service:
+
 ```yaml
 delineate-frontend:
   build:
@@ -490,12 +515,13 @@ delineate-frontend:
 ### Jaeger Configuration
 
 Already included in compose.dev.yml:
+
 ```yaml
 delineate-jaeger:
   image: jaegertracing/all-in-one:latest
   ports:
-    - "16686:16686"  # Jaeger UI
-    - "4318:4318"    # OTLP HTTP endpoint
+    - "16686:16686" # Jaeger UI
+    - "4318:4318" # OTLP HTTP endpoint
   environment:
     - COLLECTOR_OTLP_ENABLED=true
 ```
@@ -503,21 +529,25 @@ delineate-jaeger:
 ## Benefits of This Solution
 
 ### 1. Full Observability
+
 - **Visibility**: See exactly what's happening in your system
 - **Debugging**: Trace errors from user action to root cause
 - **Performance**: Identify slow endpoints and bottlenecks
 
 ### 2. Production-Ready
+
 - **Error Tracking**: Never miss a production error
 - **Alerting**: Sentry can alert on errors and performance issues
 - **Compliance**: Audit trail for debugging and compliance
 
 ### 3. Developer Experience
+
 - **Fast Debugging**: Trace ID correlation speeds up debugging
 - **Clear Insights**: Visual dashboards show system health
 - **Easy Setup**: Docker Compose makes local development simple
 
 ### 4. Scalability
+
 - **Distributed**: Works across multiple services
 - **Batched**: Traces are batched to reduce overhead
 - **Sampling**: Can configure sampling rates for production
@@ -535,6 +565,7 @@ delineate-jaeger:
 ## Future Enhancements
 
 Possible improvements:
+
 - Session replay integration
 - Custom dashboards for specific metrics
 - Alert configuration UI

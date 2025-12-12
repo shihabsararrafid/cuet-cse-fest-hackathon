@@ -1,4 +1,4 @@
-import { HealthResponse } from '../api';
+import { HealthResponse } from "../api";
 
 interface HealthStatusProps {
   health: HealthResponse | null;

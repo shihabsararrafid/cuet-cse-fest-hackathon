@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { api, HealthResponse, DownloadJob, APIError } from '../api';
-import { Sentry } from '../sentry';
-import { getCurrentTraceId } from '../instrumentation';
-import { HealthStatus } from './HealthStatus';
-import { DownloadJobList } from './DownloadJobList';
-import { ErrorLog } from './ErrorLog';
-import { TraceViewer } from './TraceViewer';
-import { PerformanceMetrics } from './PerformanceMetrics';
-import './Dashboard.css';
+import { useState, useEffect } from "react";
+import { api, HealthResponse, DownloadJob, APIError } from "../api";
+import { Sentry } from "../sentry";
+import { getCurrentTraceId } from "../instrumentation";
+import { HealthStatus } from "./HealthStatus";
+import { DownloadJobList } from "./DownloadJobList";
+import { ErrorLog } from "./ErrorLog";
+import { TraceViewer } from "./TraceViewer";
+import { PerformanceMetrics } from "./PerformanceMetrics";
+import "./Dashboard.css";
 
 export interface ErrorLogEntry {
   id: string;
@@ -21,7 +21,7 @@ export interface PerformanceMetric {
   timestamp: Date;
   endpoint: string;
   duration: number;
-  status: 'success' | 'failure';
+  status: "success" | "failure";
 }
 
 export function Dashboard() {
@@ -45,9 +45,9 @@ export function Dashboard() {
           ...prev.slice(-99),
           {
             timestamp: new Date(),
-            endpoint: '/health',
+            endpoint: "/health",
             duration,
-            status: 'success',
+            status: "success",
           },
         ]);
       } catch (error) {
@@ -56,16 +56,16 @@ export function Dashboard() {
           ...prev.slice(-99),
           {
             timestamp: new Date(),
-            endpoint: '/health',
+            endpoint: "/health",
             duration,
-            status: 'failure',
+            status: "failure",
           },
         ]);
 
         addError(
           error instanceof APIError
             ? error.message
-            : 'Failed to fetch health status'
+            : "Failed to fetch health status",
         );
       }
     };
@@ -100,7 +100,7 @@ export function Dashboard() {
 
     // Capture in Sentry
     Sentry.captureMessage(message, {
-      level: 'error',
+      level: "error",
       tags: {
         trace_id: traceId,
       },
@@ -125,9 +125,9 @@ export function Dashboard() {
         ...prev.slice(-99),
         {
           timestamp: new Date(),
-          endpoint: '/v1/download/initiate',
+          endpoint: "/v1/download/initiate",
           duration,
-          status: 'success',
+          status: "success",
         },
       ]);
     } catch (error) {
@@ -136,17 +136,17 @@ export function Dashboard() {
         ...prev.slice(-99),
         {
           timestamp: new Date(),
-          endpoint: '/v1/download/initiate',
+          endpoint: "/v1/download/initiate",
           duration,
-          status: 'failure',
+          status: "failure",
         },
       ]);
 
       addError(
         error instanceof APIError
           ? error.message
-          : 'Failed to initiate download',
-        error instanceof APIError ? error.status : undefined
+          : "Failed to initiate download",
+        error instanceof APIError ? error.status : undefined,
       );
     } finally {
       setLoading(false);
@@ -165,14 +165,14 @@ export function Dashboard() {
         ...prev.slice(-99),
         {
           timestamp: new Date(),
-          endpoint: '/v1/download/check',
+          endpoint: "/v1/download/check",
           duration,
-          status: 'success',
+          status: "success",
         },
       ]);
 
       alert(
-        `File ${fileId}: ${result.available ? 'Available' : 'Not Available'}\nSize: ${result.size ? `${(result.size / 1024 / 1024).toFixed(2)} MB` : 'N/A'}`
+        `File ${fileId}: ${result.available ? "Available" : "Not Available"}\nSize: ${result.size ? `${(result.size / 1024 / 1024).toFixed(2)} MB` : "N/A"}`,
       );
     } catch (error) {
       const duration = performance.now();
@@ -180,17 +180,15 @@ export function Dashboard() {
         ...prev.slice(-99),
         {
           timestamp: new Date(),
-          endpoint: '/v1/download/check',
+          endpoint: "/v1/download/check",
           duration,
-          status: 'failure',
+          status: "failure",
         },
       ]);
 
       addError(
-        error instanceof APIError
-          ? error.message
-          : 'Failed to check download',
-        error instanceof APIError ? error.status : undefined
+        error instanceof APIError ? error.message : "Failed to check download",
+        error instanceof APIError ? error.status : undefined,
       );
     } finally {
       setLoading(false);
@@ -210,9 +208,9 @@ export function Dashboard() {
         ...prev.slice(-99),
         {
           timestamp: new Date(),
-          endpoint: '/v1/download/start',
+          endpoint: "/v1/download/start",
           duration,
-          status: 'success',
+          status: "success",
         },
       ]);
     } catch (error) {
@@ -221,17 +219,15 @@ export function Dashboard() {
         ...prev.slice(-99),
         {
           timestamp: new Date(),
-          endpoint: '/v1/download/start',
+          endpoint: "/v1/download/start",
           duration,
-          status: 'failure',
+          status: "failure",
         },
       ]);
 
       addError(
-        error instanceof APIError
-          ? error.message
-          : 'Failed to start download',
-        error instanceof APIError ? error.status : undefined
+        error instanceof APIError ? error.message : "Failed to start download",
+        error instanceof APIError ? error.status : undefined,
       );
     } finally {
       setLoading(false);
@@ -247,8 +243,8 @@ export function Dashboard() {
       addError(
         error instanceof APIError
           ? error.message
-          : 'Sentry test error triggered',
-        error instanceof APIError ? error.status : 500
+          : "Sentry test error triggered",
+        error instanceof APIError ? error.status : 500,
       );
     } finally {
       setLoading(false);
@@ -267,12 +263,14 @@ export function Dashboard() {
     <div className="dashboard">
       <header className="dashboard-header">
         <h1>Observability Dashboard</h1>
-        <p className="subtitle">Real-time monitoring for Download Microservice</p>
+        <p className="subtitle">
+          Real-time monitoring for Download Microservice
+        </p>
       </header>
 
       <div className="trace-info">
-        <strong>Current Trace ID:</strong>{' '}
-        <code>{currentTraceId || 'No active trace'}</code>
+        <strong>Current Trace ID:</strong>{" "}
+        <code>{currentTraceId || "No active trace"}</code>
       </div>
 
       <div className="controls">
@@ -285,7 +283,11 @@ export function Dashboard() {
         <button onClick={handleStartDownload} disabled={loading}>
           Start Download (Long-Running)
         </button>
-        <button onClick={handleTriggerSentryTest} disabled={loading} className="danger">
+        <button
+          onClick={handleTriggerSentryTest}
+          disabled={loading}
+          className="danger"
+        >
           Trigger Sentry Test
         </button>
       </div>

@@ -1,4 +1,4 @@
-import { ErrorLogEntry } from './Dashboard';
+import { ErrorLogEntry } from "./Dashboard";
 
 interface ErrorLogProps {
   errors: ErrorLogEntry[];
@@ -31,7 +31,7 @@ export function ErrorLog({ errors, onClear }: ErrorLogProps) {
               )}
               {error.traceId && (
                 <div className="error-trace">
-                  <strong>Trace ID:</strong>{' '}
+                  <strong>Trace ID:</strong>{" "}
                   <code className="trace-id">{error.traceId}</code>
                 </div>
               )}

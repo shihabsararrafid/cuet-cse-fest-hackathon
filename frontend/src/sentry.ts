@@ -1,11 +1,13 @@
-import * as Sentry from '@sentry/react';
-import { getCurrentTraceId } from './instrumentation';
+import * as Sentry from "@sentry/react";
+import { getCurrentTraceId } from "./instrumentation";
 
 export function initSentry() {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
 
   if (!dsn) {
-    console.warn('Sentry DSN not configured. Error tracking will not be enabled.');
+    console.warn(
+      "Sentry DSN not configured. Error tracking will not be enabled.",
+    );
     return;
   }
 

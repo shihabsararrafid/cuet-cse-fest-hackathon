@@ -1,6 +1,6 @@
-import { Dashboard } from './components/Dashboard';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import './App.css';
+import { Dashboard } from "./components/Dashboard";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import "./App.css";
 
 function App() {
   return (

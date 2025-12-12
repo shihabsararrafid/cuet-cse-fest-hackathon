@@ -115,33 +115,33 @@ This microservice handles file downloads with variable processing times (10-120+
 
 ### Why This Pattern?
 
-| Aspect | Benefit |
-|--------|---------|
-| **Real-time UX** | SSE provides instant progress updates (no 2s delay) |
-| **Efficient** | Single long-lived connection vs repeated polling requests |
-| **Proxy-Friendly** | SSE uses standard HTTP, works through Cloudflare/nginx |
-| **Resilient** | Auto-fallback to polling if SSE fails or unsupported |
-| **Scalable** | Workers scale independently of API servers |
+| Aspect             | Benefit                                                   |
+| ------------------ | --------------------------------------------------------- |
+| **Real-time UX**   | SSE provides instant progress updates (no 2s delay)       |
+| **Efficient**      | Single long-lived connection vs repeated polling requests |
+| **Proxy-Friendly** | SSE uses standard HTTP, works through Cloudflare/nginx    |
+| **Resilient**      | Auto-fallback to polling if SSE fails or unsupported      |
+| **Scalable**       | Workers scale independently of API servers                |
 
 ### Pattern Comparison
 
-| Pattern | Pros | Cons | Selected |
-|---------|------|------|----------|
-| **SSE (Primary)** | Real-time updates, efficient, HTTP-based | Requires keep-alive connection | ✅ Primary |
-| **Polling (Fallback)** | Universal support, simple | Higher latency, more requests | ✅ Fallback |
-| WebSocket | Bidirectional, real-time | More complex, proxy issues | ❌ No |
-| Webhook | Serverless-friendly | Not suitable for browsers | ❌ No |
+| Pattern                | Pros                                     | Cons                           | Selected    |
+| ---------------------- | ---------------------------------------- | ------------------------------ | ----------- |
+| **SSE (Primary)**      | Real-time updates, efficient, HTTP-based | Requires keep-alive connection | ✅ Primary  |
+| **Polling (Fallback)** | Universal support, simple                | Higher latency, more requests  | ✅ Fallback |
+| WebSocket              | Bidirectional, real-time                 | More complex, proxy issues     | ❌ No       |
+| Webhook                | Serverless-friendly                      | Not suitable for browsers      | ❌ No       |
 
 ### Why SSE Over WebSocket?
 
-| Feature | SSE | WebSocket |
-|---------|-----|-----------|
-| Protocol | HTTP (text/event-stream) | ws:// (separate protocol) |
-| Proxy Support | ✅ Works everywhere | ⚠️ Needs special config |
-| Complexity | Simple (like GET request) | Complex (handshake, frames) |
-| Reconnection | ✅ Automatic | ❌ Manual implementation |
-| Direction | Server → Client (perfect for status updates) | Bidirectional (overkill) |
-| Browser Support | ✅ 97%+ (except IE11) | ✅ 98%+ |
+| Feature         | SSE                                          | WebSocket                   |
+| --------------- | -------------------------------------------- | --------------------------- |
+| Protocol        | HTTP (text/event-stream)                     | ws:// (separate protocol)   |
+| Proxy Support   | ✅ Works everywhere                          | ⚠️ Needs special config     |
+| Complexity      | Simple (like GET request)                    | Complex (handshake, frames) |
+| Reconnection    | ✅ Automatic                                 | ❌ Manual implementation    |
+| Direction       | Server → Client (perfect for status updates) | Bidirectional (overkill)    |
+| Browser Support | ✅ 97%+ (except IE11)                        | ✅ 98%+                     |
 
 **Decision:** SSE is perfect for our use case (server pushes status updates to client) and simpler than WebSocket.
 
@@ -152,15 +152,18 @@ This microservice handles file downloads with variable processing times (10-120+
 ### 3.1 API Contract Changes
 
 #### Existing Endpoint (Modified)
+
 ```
 POST /v1/download/start
 ```
+
 **Before:** Synchronous processing (blocks 10-120s)
 **After:** Returns immediately with job_id
 
 #### New Endpoints
 
 **1. Initiate Download**
+
 ```http
 POST /v1/download/initiate
 Content-Type: application/json
@@ -171,6 +174,7 @@ Content-Type: application/json
 ```
 
 Response (201 Created):
+
 ```json
 {
   "job_id": "job_abc123",
@@ -182,12 +186,14 @@ Response (201 Created):
 ```
 
 **2. Subscribe to Real-time Updates (SSE) - PRIMARY**
+
 ```http
 GET /v1/download/subscribe/:job_id
 Accept: text/event-stream
 ```
 
 Response (200 OK):
+
 ```http
 Content-Type: text/event-stream
 Cache-Control: no-cache
@@ -216,11 +222,13 @@ data: {"timestamp":"2025-12-12T10:01:00Z"}
 ```
 
 **3. Check Job Status (Polling) - FALLBACK**
+
 ```http
 GET /v1/download/status/:job_id
 ```
 
 Response (200 OK):
+
 ```json
 {
   "job_id": "job_abc123",
@@ -232,6 +240,7 @@ Response (200 OK):
 ```
 
 When completed:
+
 ```json
 {
   "job_id": "job_abc123",
@@ -247,6 +256,7 @@ Status values: `queued`, `processing`, `completed`, `failed`
 ### 3.2 Database Schema
 
 **Redis (Job Queue & Cache)**
+
 ```javascript
 // 1. Job Queue (BullMQ manages this)
 Queue: "download-queue"
@@ -282,11 +292,13 @@ Message: {
 ### 3.3 Background Job Processing
 
 **Queue Configuration:**
+
 - Technology: BullMQ + Redis
 - Concurrency: 5 workers, 10 jobs per worker
 - Retry: 3 attempts with exponential backoff
 
 **Worker Process:**
+
 1. Pull job from queue
 2. Update status to "processing"
 3. Execute download (with simulated delay)
@@ -298,6 +310,7 @@ Message: {
 ### 3.4 Error Handling
 
 **Retry Strategy:**
+
 - Max attempts: 3
 - Backoff: Exponential (5s, 10s, 20s)
 - Non-retryable errors: Invalid file_id
@@ -308,23 +321,23 @@ Message: {
 ```javascript
 const TIMEOUTS = {
   // API timeouts
-  API_REQUEST: 30000,              // 30s - Standard API requests
+  API_REQUEST: 30000, // 30s - Standard API requests
 
   // SSE timeouts
-  SSE_CONNECTION: 300000,          // 5min - Keep SSE connection alive
-  SSE_HEARTBEAT_INTERVAL: 30000,   // 30s - Send heartbeat to prevent timeout
-  SSE_RECONNECT_DELAY: 3000,       // 3s - Client reconnect delay
+  SSE_CONNECTION: 300000, // 5min - Keep SSE connection alive
+  SSE_HEARTBEAT_INTERVAL: 30000, // 30s - Send heartbeat to prevent timeout
+  SSE_RECONNECT_DELAY: 3000, // 3s - Client reconnect delay
 
   // Polling timeouts (fallback)
-  POLL_INTERVAL: 2000,             // 2s - Polling frequency
-  POLL_TIMEOUT: 10000,             // 10s - Polling request timeout
+  POLL_INTERVAL: 2000, // 2s - Polling frequency
+  POLL_TIMEOUT: 10000, // 10s - Polling request timeout
 
   // Job processing
-  JOB_PROCESSING: 300000,          // 5min - Max job duration
-  REDIS_COMMAND: 5000,             // 5s - Redis operations
+  JOB_PROCESSING: 300000, // 5min - Max job duration
+  REDIS_COMMAND: 5000, // 5s - Redis operations
 
   // S3 operations
-  S3_UPLOAD: 120000,               // 2min - S3 operations
+  S3_UPLOAD: 120000, // 2min - S3 operations
   PRESIGNED_URL_EXPIRY: 604800000, // 7 days - Download URL expiry
 };
 ```
@@ -374,11 +387,11 @@ export default {
     const url = new URL(request.url);
 
     // Forward download API requests to origin
-    if (url.pathname.startsWith('/v1/download/')) {
+    if (url.pathname.startsWith("/v1/download/")) {
       return fetch(request, {
         cf: {
           // Cloudflare-specific settings
-          cacheTtl: 0,           // Don't cache API responses
+          cacheTtl: 0, // Don't cache API responses
           cacheEverything: false,
         },
       });
@@ -386,11 +399,12 @@ export default {
 
     // All other requests
     return fetch(request);
-  }
+  },
 };
 ```
 
 **Why Polling Works with Cloudflare:**
+
 - ✅ Each polling request completes in <1s (well under 100s timeout)
 - ✅ No long-lived connections needed
 - ✅ Works on Free tier (no Enterprise upgrade required)
@@ -572,14 +586,14 @@ http {
 
 **Key nginx Settings Explained:**
 
-| Setting | Value | Why |
-|---------|-------|-----|
-| `proxy_buffering on` | Enabled | Buffer small responses, reduces backend load |
-| `proxy_connect_timeout` | 5-10s | Time to establish connection to backend |
-| `proxy_read_timeout` | 10-30s | Time to read response (polling is fast) |
-| `limit_req` | 10-100 r/s | Prevent abuse |
-| `keepalive 32` | 32 connections | Reuse connections to backend |
-| `least_conn` | Load balancing | Distribute load evenly |
+| Setting                 | Value          | Why                                          |
+| ----------------------- | -------------- | -------------------------------------------- |
+| `proxy_buffering on`    | Enabled        | Buffer small responses, reduces backend load |
+| `proxy_connect_timeout` | 5-10s          | Time to establish connection to backend      |
+| `proxy_read_timeout`    | 10-30s         | Time to read response (polling is fast)      |
+| `limit_req`             | 10-100 r/s     | Prevent abuse                                |
+| `keepalive 32`          | 32 connections | Reuse connections to backend                 |
+| `least_conn`            | Load balancing | Distribute load evenly                       |
 
 ---
 
@@ -588,8 +602,8 @@ http {
 **CloudFormation Template:**
 
 ```yaml
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'ALB for Download API'
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "ALB for Download API"
 
 Resources:
   # Application Load Balancer
@@ -697,14 +711,15 @@ Resources:
 
 **Key ALB Settings:**
 
-| Setting | Value | Purpose |
-|---------|-------|---------|
-| Health Check Interval | 30s | Check backend health every 30s |
-| Deregistration Delay | 30s | Wait 30s before removing unhealthy target |
-| Connection Idle Timeout | 60s (default) | Fine for polling (each request < 1s) |
-| Algorithm | Least Outstanding Requests | Better load distribution |
+| Setting                 | Value                      | Purpose                                   |
+| ----------------------- | -------------------------- | ----------------------------------------- |
+| Health Check Interval   | 30s                        | Check backend health every 30s            |
+| Deregistration Delay    | 30s                        | Wait 30s before removing unhealthy target |
+| Connection Idle Timeout | 60s (default)              | Fine for polling (each request < 1s)      |
+| Algorithm               | Least Outstanding Requests | Better load distribution                  |
 
 **Why Polling Works with ALB:**
+
 - ✅ Default 60s idle timeout is sufficient (each poll completes in <1s)
 - ✅ No special configuration needed
 - ✅ Built-in health checks keep only healthy backends in rotation
@@ -714,13 +729,14 @@ Resources:
 
 ### 4.4 Comparison & Recommendations
 
-| Proxy | Best For | Timeout Limit | Complexity | Cost |
-|-------|----------|---------------|------------|------|
-| **Cloudflare** | Simple setups, CDN benefits | 100s (Free) | Low | Free tier available |
-| **nginx** | Full control, on-premise | Configurable (no limit) | Medium | Self-hosted |
-| **AWS ALB** | AWS-native, auto-scaling | 60s default (configurable) | Low | ~$25/month |
+| Proxy          | Best For                    | Timeout Limit              | Complexity | Cost                |
+| -------------- | --------------------------- | -------------------------- | ---------- | ------------------- |
+| **Cloudflare** | Simple setups, CDN benefits | 100s (Free)                | Low        | Free tier available |
+| **nginx**      | Full control, on-premise    | Configurable (no limit)    | Medium     | Self-hosted         |
+| **AWS ALB**    | AWS-native, auto-scaling    | 60s default (configurable) | Low        | ~$25/month          |
 
 **Recommendation:**
+
 - **Start with Cloudflare** (easiest, free tier works)
 - **Add nginx** if you need advanced features (caching, rate limiting)
 - **Use ALB** if you're already on AWS (simplest AWS setup)
@@ -733,15 +749,17 @@ Resources:
 
 ```typescript
 // hooks/useDownload.ts
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 export function useDownload(fileId: number) {
   const [jobId, setJobId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>('idle');
+  const [status, setStatus] = useState<string>("idle");
   const [progress, setProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [connectionType, setConnectionType] = useState<'sse' | 'polling'>('sse');
+  const [connectionType, setConnectionType] = useState<"sse" | "polling">(
+    "sse",
+  );
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -749,9 +767,9 @@ export function useDownload(fileId: number) {
   // Initiate download
   const initiateDownload = async () => {
     try {
-      const response = await fetch('/v1/download/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/v1/download/initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ file_id: fileId }),
       });
 
@@ -769,9 +787,11 @@ export function useDownload(fileId: number) {
   // PRIMARY: Connect to SSE for real-time updates
   const connectSSE = (jobId: string) => {
     // Check if SSE is supported
-    if (typeof EventSource === 'undefined') {
-      console.warn('[SSE] Not supported in this browser, falling back to polling');
-      setConnectionType('polling');
+    if (typeof EventSource === "undefined") {
+      console.warn(
+        "[SSE] Not supported in this browser, falling back to polling",
+      );
+      setConnectionType("polling");
       startPolling(jobId);
       return;
     }
@@ -779,56 +799,55 @@ export function useDownload(fileId: number) {
     try {
       const eventSource = new EventSource(`/v1/download/subscribe/${jobId}`);
       eventSourceRef.current = eventSource;
-      setConnectionType('sse');
+      setConnectionType("sse");
 
       // Connection established
-      eventSource.addEventListener('connected', (e) => {
-        console.log('[SSE] Connected:', e.data);
+      eventSource.addEventListener("connected", (e) => {
+        console.log("[SSE] Connected:", e.data);
       });
 
       // Status updates
-      eventSource.addEventListener('status', (e) => {
+      eventSource.addEventListener("status", (e) => {
         const data = JSON.parse(e.data);
         setStatus(data.status);
         setProgress(data.progress || 0);
       });
 
       // Completed event
-      eventSource.addEventListener('completed', (e) => {
+      eventSource.addEventListener("completed", (e) => {
         const data = JSON.parse(e.data);
-        setStatus('completed');
+        setStatus("completed");
         setProgress(100);
         setDownloadUrl(data.download_url);
         eventSource.close();
       });
 
       // Failed event
-      eventSource.addEventListener('failed', (e) => {
+      eventSource.addEventListener("failed", (e) => {
         const data = JSON.parse(e.data);
-        setStatus('failed');
-        setError(data.error || 'Download failed');
+        setStatus("failed");
+        setError(data.error || "Download failed");
         eventSource.close();
       });
 
       // Heartbeat (keep-alive)
-      eventSource.addEventListener('heartbeat', (e) => {
-        console.debug('[SSE] Heartbeat:', e.data);
+      eventSource.addEventListener("heartbeat", (e) => {
+        console.debug("[SSE] Heartbeat:", e.data);
       });
 
       // Error handling
       eventSource.onerror = (err) => {
-        console.error('[SSE] Connection error:', err);
+        console.error("[SSE] Connection error:", err);
         eventSource.close();
 
         // Fallback to polling
-        console.log('[SSE] Falling back to polling...');
-        setConnectionType('polling');
+        console.log("[SSE] Falling back to polling...");
+        setConnectionType("polling");
         startPolling(jobId);
       };
-
     } catch (err) {
-      console.error('[SSE] Failed to establish connection:', err);
-      setConnectionType('polling');
+      console.error("[SSE] Failed to establish connection:", err);
+      setConnectionType("polling");
       startPolling(jobId);
     }
   };
@@ -849,19 +868,19 @@ export function useDownload(fileId: number) {
         setProgress(data.progress || 0);
 
         // Stop polling if completed or failed
-        if (data.status === 'completed') {
+        if (data.status === "completed") {
           setDownloadUrl(data.download_url);
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
           }
-        } else if (data.status === 'failed') {
-          setError(data.error || 'Download failed');
+        } else if (data.status === "failed") {
+          setError(data.error || "Download failed");
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
           }
         }
       } catch (err) {
-        console.error('[Polling] Error:', err);
+        console.error("[Polling] Error:", err);
       }
     };
 
@@ -890,7 +909,7 @@ export function useDownload(fileId: number) {
     progress,
     downloadUrl,
     error,
-    connectionType,  // 'sse' or 'polling'
+    connectionType, // 'sse' or 'polling'
   };
 }
 ```
@@ -966,7 +985,9 @@ async function fetchWithRetry(url: string, options = {}, maxRetries = 3) {
       if (i === maxRetries - 1) throw error;
 
       // Wait before retry: 1s, 2s, 4s
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1000 * Math.pow(2, i)),
+      );
     }
   }
 }
@@ -986,6 +1007,7 @@ This architecture solves the long-running download problem by:
 6. **Working reliably** behind any reverse proxy (Cloudflare, nginx, ALB)
 
 **Key Technologies:**
+
 - BullMQ + Redis for job queue and pub/sub
 - Server-Sent Events (SSE) for real-time updates
 - Polling as fallback mechanism
@@ -993,6 +1015,7 @@ This architecture solves the long-running download problem by:
 - Presigned URLs for direct downloads
 
 **Benefits:**
+
 - ✅ No timeout issues
 - ✅ Real-time progress updates (SSE)
 - ✅ Universal compatibility (polling fallback)
@@ -1001,5 +1024,6 @@ This architecture solves the long-running download problem by:
 - ✅ Works everywhere (Cloudflare Free tier compatible)
 
 **Architecture Decision:**
+
 - **Primary:** SSE for 97%+ of users (instant updates, efficient)
 - **Fallback:** Polling for IE11 or connection issues (universal support)

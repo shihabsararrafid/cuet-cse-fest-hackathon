@@ -1,18 +1,19 @@
-import { createSpan, getCurrentTraceId } from './instrumentation';
-import { Sentry } from './sentry';
+import { createSpan, getCurrentTraceId } from "./instrumentation";
+import { Sentry } from "./sentry";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export interface HealthResponse {
-  status: 'healthy' | 'unhealthy';
+  status: "healthy" | "unhealthy";
   checks: {
-    storage: 'ok' | 'error';
+    storage: "ok" | "error";
   };
 }
 
 export interface DownloadJob {
   jobId: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
+  status: "queued" | "processing" | "completed" | "failed";
   totalFileIds?: number;
   file_id?: number;
   downloadUrl?: string | null;
@@ -38,29 +39,29 @@ class APIError extends Error {
   constructor(
     message: string,
     public status: number,
-    public response?: ErrorResponse
+    public response?: ErrorResponse,
   ) {
     super(message);
-    this.name = 'APIError';
+    this.name = "APIError";
   }
 }
 
 async function fetchWithTracing<T>(
   url: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
   return createSpan(
-    `HTTP ${options?.method || 'GET'} ${url}`,
+    `HTTP ${options?.method || "GET"} ${url}`,
     async () => {
       const traceId = getCurrentTraceId();
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options?.headers,
       };
 
       // Add trace ID to request for backend correlation
       if (traceId) {
-        headers['x-trace-id'] = traceId;
+        headers["x-trace-id"] = traceId;
       }
 
       const response = await fetch(url, {
@@ -69,15 +70,15 @@ async function fetchWithTracing<T>(
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          error: 'Unknown error',
+        const errorData = (await response.json().catch(() => ({
+          error: "Unknown error",
           message: `HTTP ${response.status}`,
-        })) as ErrorResponse;
+        }))) as ErrorResponse;
 
         const error = new APIError(
           errorData.message || `HTTP ${response.status}`,
           response.status,
-          errorData
+          errorData,
         );
 
         // Capture error in Sentry
@@ -100,9 +101,9 @@ async function fetchWithTracing<T>(
       return response.json() as Promise<T>;
     },
     {
-      'http.url': url,
-      'http.method': options?.method || 'GET',
-    }
+      "http.url": url,
+      "http.method": options?.method || "GET",
+    },
   );
 }
 
@@ -112,25 +113,28 @@ export const api = {
   },
 
   async initiateDownload(fileIds: number[]): Promise<DownloadJob> {
-    return fetchWithTracing<DownloadJob>(`${API_BASE_URL}/v1/download/initiate`, {
-      method: 'POST',
-      body: JSON.stringify({ file_ids: fileIds }),
-    });
+    return fetchWithTracing<DownloadJob>(
+      `${API_BASE_URL}/v1/download/initiate`,
+      {
+        method: "POST",
+        body: JSON.stringify({ file_ids: fileIds }),
+      },
+    );
   },
 
   async checkDownload(fileId: number): Promise<DownloadCheckResponse> {
     return fetchWithTracing<DownloadCheckResponse>(
       `${API_BASE_URL}/v1/download/check`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ file_id: fileId }),
-      }
+      },
     );
   },
 
   async startDownload(fileId: number): Promise<DownloadJob> {
     return fetchWithTracing<DownloadJob>(`${API_BASE_URL}/v1/download/start`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ file_id: fileId }),
     });
   },
@@ -139,9 +143,9 @@ export const api = {
     return fetchWithTracing<never>(
       `${API_BASE_URL}/v1/download/check?sentry_test=true`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ file_id: fileId }),
-      }
+      },
     );
   },
 };
