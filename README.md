@@ -570,6 +570,7 @@ This project uses **GitHub Actions** for continuous integration and continuous d
 ### Pipeline Status
 
 The CI/CD pipeline runs automatically on:
+
 - ✅ Push to `main` or `master` branch
 - ✅ Pull requests to `main` or `master` branch
 - ✅ Manual triggers via GitHub Actions UI
@@ -603,11 +604,13 @@ Our CI/CD pipeline includes:
 Before pushing your code, ensure all checks pass locally:
 
 #### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 #### 2. Run Linting
+
 ```bash
 # Check for linting errors
 npm run lint
@@ -617,6 +620,7 @@ npm run lint:fix
 ```
 
 #### 3. Check Code Formatting
+
 ```bash
 # Check formatting
 npm run format:check
@@ -626,12 +630,14 @@ npm run format
 ```
 
 #### 4. Run E2E Tests
+
 ```bash
 # Run all E2E tests
 npm run test:e2e
 ```
 
 #### 5. Build Docker Image (Optional)
+
 ```bash
 # Development build
 npm run docker:dev
@@ -673,17 +679,18 @@ Before creating a pull request, make sure:
 
 The pipeline is defined in `.github/workflows/ci.yml`. Key configurations:
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| Runner OS | Ubuntu 24.04 | Latest LTS Ubuntu |
-| Node Version | 24-slim | Node.js 24 with TypeScript support |
-| Lint Timeout | 10 minutes | Max time for linting |
-| Test Timeout | 15 minutes | Max time for E2E tests |
-| Build Timeout | 20 minutes | Max time for Docker build |
+| Setting       | Value        | Description                        |
+| ------------- | ------------ | ---------------------------------- |
+| Runner OS     | Ubuntu 24.04 | Latest LTS Ubuntu                  |
+| Node Version  | 24-slim      | Node.js 24 with TypeScript support |
+| Lint Timeout  | 10 minutes   | Max time for linting               |
+| Test Timeout  | 15 minutes   | Max time for E2E tests             |
+| Build Timeout | 20 minutes   | Max time for Docker build          |
 
 ### Troubleshooting CI Failures
 
 #### Lint Failures
+
 ```bash
 # Run locally to see errors
 npm run lint
@@ -693,6 +700,7 @@ npm run lint:fix
 ```
 
 #### Format Failures
+
 ```bash
 # Run locally to see formatting issues
 npm run format:check
@@ -702,6 +710,7 @@ npm run format
 ```
 
 #### Test Failures
+
 ```bash
 # Run tests with verbose output
 npm run test:e2e
@@ -711,6 +720,7 @@ npm run dev
 ```
 
 #### Build Failures
+
 ```bash
 # Test Docker build locally
 docker build -f docker/Dockerfile.prod -t test .
