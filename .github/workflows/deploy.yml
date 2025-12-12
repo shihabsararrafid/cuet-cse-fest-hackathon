@@ -25,17 +25,23 @@ jobs:
           script_stop: true
           script: |
             set -e
+
             echo "🔄 Starting deployment..."
 
-             pwd
-
-
-             echo "Starting"
-
+            # Debug: Show where we are and what files exist
+            echo "📍 Current directory:"
+            pwd
+            echo ""
+            echo "📁 Files in current directory:"
+            ls -la
+            echo ""
+            echo "🔍 Looking for start scripts:"
+            ls -la start* || echo "No start* files found"
+            echo ""
 
             # Make script executable and run it
-            chmod +x start-server.sh
-            ./start-server.sh
+            chmod +x start_service.sh
+            ./start_service.sh
 
             # Wait for application to start
             echo "⏳ Waiting for application to start..."
@@ -84,9 +90,8 @@ jobs:
           echo "**Rollback instructions:**" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" >> $GITHUB_STEP_SUMMARY
-          echo "cd /opt/apps/cuet-micro-ops-hackthon-2025" >> $GITHUB_STEP_SUMMARY
-          echo "docker compose -f docker/compose.prod.yml down" >> $GITHUB_STEP_SUMMARY
-          echo "docker compose -f docker/compose.prod.yml up -d" >> $GITHUB_STEP_SUMMARY
+          echo "cd /home/ubuntu" >> $GITHUB_STEP_SUMMARY
+          echo "./start_service.sh" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Notify deployment status
