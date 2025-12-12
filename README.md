@@ -150,6 +150,9 @@ curl -X POST http://localhost:3000/v1/download/start \
   -H "Content-Type: application/json" \
   -d '{"file_id": 70000}'
 
+
+
+#  Branch rule checking
 # Server logs will show something like:
 # [Download] Starting file_id=70000 | delay=95.2s (range: 10s-120s) | enabled=true
 # But your request times out at 30 seconds (REQUEST_TIMEOUT_MS)
