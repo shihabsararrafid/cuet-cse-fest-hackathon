@@ -1,6 +1,7 @@
 # Delineate Hackathon Challenge - CUET Fest 2025
 
 [![CI](https://github.com/bongodev/cuet-micro-ops-hackthon-2025/actions/workflows/ci.yml/badge.svg)](https://github.com/bongodev/cuet-micro-ops-hackthon-2025/actions/workflows/ci.yml)
+[![Security](https://github.com/bongodev/cuet-micro-ops-hackthon-2025/actions/workflows/security.yml/badge.svg)](https://github.com/bongodev/cuet-micro-ops-hackthon-2025/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## The Scenario
@@ -737,6 +738,226 @@ You can manually trigger the CI pipeline:
 2. Select "CI" workflow
 3. Click "Run workflow"
 4. Choose branch and click "Run workflow" button
+
+---
+
+## Security Scanning
+
+This project includes **automated security scanning** to detect vulnerabilities in code, dependencies, and Docker images.
+
+### Security Pipeline
+
+We use three complementary security scanners:
+
+```
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│     CodeQL       │    │      Snyk        │    │      Trivy       │
+│                  │    │                  │    │                  │
+│ Static Code      │    │ Dependency       │    │ Container Image  │
+│ Analysis (SAST)  │    │ Scanning (SCA)   │    │ Scanning         │
+├──────────────────┤    ├──────────────────┤    ├──────────────────┤
+│ • SQL Injection  │    │ • CVE Database   │    │ • OS Packages    │
+│ • XSS Attacks    │    │ • npm Packages   │    │ • Base Image     │
+│ • Path Traversal │    │ • Known Vulns    │    │ • App Libraries  │
+│ • Code Smells    │    │ • License Issues │    │ • Config Issues  │
+└──────────────────┘    └──────────────────┘    └──────────────────┘
+```
+
+### Scanner Details
+
+#### 1. **CodeQL** - Finds security bugs in YOUR code
+
+**What it scans:** TypeScript/JavaScript source code
+**Finds:** SQL injection, XSS, command injection, hardcoded secrets
+**Runtime:** ~5-10 minutes
+**Cost:** Free for public repos
+
+**Example vulnerability detected:**
+```typescript
+// 🚨 CodeQL would flag this as SQL Injection
+const query = `SELECT * FROM users WHERE id=${userId}`;
+db.execute(query);
+```
+
+#### 2. **Snyk** - Finds vulnerable dependencies
+
+**What it scans:** package.json and package-lock.json
+**Finds:** Known CVEs in npm packages, outdated packages, license issues
+**Runtime:** ~30 seconds
+**Cost:** Free tier (200 tests/month)
+
+**Example vulnerability detected:**
+```json
+{
+  "dependencies": {
+    "axios": "0.21.0"  // 🚨 Snyk: CVE-2021-3749 (SSRF vulnerability)
+  }
+}
+```
+
+**Setup Required:**
+1. Sign up at [snyk.io](https://app.snyk.io/)
+2. Get your API token
+3. Add `SNYK_TOKEN` to GitHub Secrets:
+   - Go to: Settings → Secrets → Actions → New repository secret
+   - Name: `SNYK_TOKEN`
+   - Value: Your Snyk API token
+
+#### 3. **Trivy** - Finds vulnerable Docker images
+
+**What it scans:** Docker images (OS packages + app dependencies)
+**Finds:** Vulnerable base images, outdated system packages, misconfigurations
+**Runtime:** ~1-2 minutes
+**Cost:** Free and open source
+
+**Example vulnerability detected:**
+```dockerfile
+FROM node:18-alpine
+# 🚨 Trivy: Base image has CVE-2023-XXXX in OpenSSL
+```
+
+### When Scans Run
+
+Security scans run automatically:
+
+- ✅ On every push to `main`/`master`
+- ✅ On every pull request
+- ✅ Daily at 2 AM UTC (scheduled scan)
+- ✅ Manually via GitHub Actions UI
+
+### Viewing Security Results
+
+#### Option 1: GitHub Security Tab
+1. Go to your repo → **Security** tab
+2. Click **Code scanning alerts**
+3. View detailed vulnerability reports
+4. See suggested fixes and remediation steps
+
+#### Option 2: Workflow Logs
+1. Go to **Actions** tab
+2. Click on "Security Scanning" workflow
+3. View individual scanner results (CodeQL, Snyk, Trivy)
+4. Download Trivy report artifact
+
+#### Option 3: Pull Request Comments
+- Security scanners automatically comment on PRs
+- Shows vulnerabilities introduced by the PR
+- Blocks merge if critical issues found
+
+### Severity Levels
+
+| Level | Description | Action |
+|-------|-------------|--------|
+| **Critical** | Immediate exploitation risk | **MUST FIX** - Blocks deployment |
+| **High** | Serious vulnerability | Fix within 7 days |
+| **Medium** | Moderate risk | Fix within 30 days |
+| **Low** | Minor issue | Fix when convenient |
+
+### Handling Security Alerts
+
+#### 1. Dependency Vulnerabilities (Snyk)
+```bash
+# View vulnerabilities
+npm audit
+
+# Auto-fix (if available)
+npm audit fix
+
+# Update specific package
+npm update axios
+
+# Manual fix
+npm install axios@latest
+```
+
+#### 2. Code Vulnerabilities (CodeQL)
+- Review the alert in GitHub Security tab
+- Click "Show more details" for remediation advice
+- Fix the code according to recommendations
+- Re-run the security scan
+
+#### 3. Image Vulnerabilities (Trivy)
+```bash
+# Update base image
+FROM node:24-slim  # Use latest version
+
+# Or use distroless images
+FROM gcr.io/distroless/nodejs24-debian12
+```
+
+### Security Best Practices
+
+1. **Never commit secrets**
+   ```bash
+   # ❌ Bad
+   const API_KEY = "sk-1234567890"
+
+   # ✅ Good
+   const API_KEY = process.env.API_KEY
+   ```
+
+2. **Keep dependencies updated**
+   ```bash
+   # Check for updates weekly
+   npm outdated
+   npm update
+   ```
+
+3. **Use parameterized queries**
+   ```typescript
+   // ❌ Bad - SQL Injection risk
+   db.query(`SELECT * FROM users WHERE id=${userId}`)
+
+   // ✅ Good - Parameterized query
+   db.query('SELECT * FROM users WHERE id=?', [userId])
+   ```
+
+4. **Validate user input**
+   ```typescript
+   // ✅ Use Zod schemas (already in this project!)
+   const schema = z.object({
+     userId: z.number().int().positive()
+   });
+   const validated = schema.parse(req.body);
+   ```
+
+5. **Use minimal Docker images**
+   ```dockerfile
+   # Smaller image = fewer vulnerabilities
+   FROM node:24-alpine  # 170MB
+   # vs
+   FROM node:24        # 1GB
+   ```
+
+### Disabling Security Scans
+
+If you need to temporarily disable a scanner:
+
+```yaml
+# In .github/workflows/security.yml
+
+# Disable CodeQL
+codeql:
+  if: false  # Add this line
+
+# Disable Snyk
+snyk:
+  if: false  # Add this line
+
+# Disable Trivy
+trivy:
+  if: false  # Add this line
+```
+
+### Cost Considerations
+
+| Scanner | Free Tier | Paid Plans |
+|---------|-----------|------------|
+| CodeQL | ✅ Unlimited (public repos) | $21/user/month (private) |
+| Snyk | ✅ 200 tests/month | $52/month (Team) |
+| Trivy | ✅ Unlimited (open source) | N/A |
+
+**For this hackathon:** All scanners work on the free tier! 🎉
 
 ---
 

@@ -1,0 +1,188 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Allow only one security scan per branch at a time
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: CodeQL - Static Application Security Testing (SAST)
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      # Required for CodeQL to upload results
+      security-events: write
+      contents: read
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Analyze JavaScript/TypeScript
+        language: ["javascript"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use default query suites (security-extended for thorough scanning)
+          queries: security-extended
+          # Optional: Add custom queries
+          # config-file: .github/codeql/codeql-config.yml
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+          # Upload results to GitHub Security tab
+          upload: true
+
+  # Job 2: Snyk - Software Composition Analysis (SCA)
+  snyk:
+    name: Snyk Dependency Scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Only run on pull requests and pushes to main (save Snyk credits)
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          # Add SNYK_TOKEN as a GitHub secret
+          # Get free token at: https://app.snyk.io/
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          # Fail build if vulnerabilities found
+          args: --severity-threshold=high
+
+      - name: Upload Snyk results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+  # Job 3: Trivy - Container Image Scanning
+  trivy:
+    name: Trivy Container Scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.prod
+          push: false
+          load: true
+          tags: delineate-hackathon:security-scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: delineate-hackathon:security-scan
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          # Scan for vulnerabilities in OS packages and app dependencies
+          vuln-type: "os,library"
+          # Ignore unfixed vulnerabilities (can't do anything about them)
+          ignore-unfixed: true
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Generate Trivy report (human-readable)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: delineate-hackathon:security-scan
+          format: "table"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          output: "trivy-report.txt"
+
+      - name: Upload Trivy report as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-security-report
+          path: trivy-report.txt
+          retention-days: 30
+
+  # Job 4: Security Summary
+  security-summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-24.04
+    needs: [codeql, snyk, trivy]
+    if: always()
+
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "## 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scanner | Status | Purpose |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL | ${{ needs.codeql.result }} | Static code analysis |" >> $GITHUB_STEP_SUMMARY
+          echo "| Snyk | ${{ needs.snyk.result }} | Dependency scanning |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy | ${{ needs.trivy.result }} | Container scanning |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Scan Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Source code security (CodeQL)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ npm package vulnerabilities (Snyk)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Docker image vulnerabilities (Trivy)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed results in the [Security tab](https://github.com/${{ github.repository }}/security)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check security status
+        run: |
+          if [[ "${{ needs.codeql.result }}" == "failure" ]] || \
+             [[ "${{ needs.snyk.result }}" == "failure" ]] || \
+             [[ "${{ needs.trivy.result }}" == "failure" ]]; then
+            echo "⚠️ Security vulnerabilities detected!"
+            echo "Check the Security tab for details"
+            exit 1
+          fi
+          echo "✅ All security scans passed!"
