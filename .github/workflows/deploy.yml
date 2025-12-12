@@ -49,7 +49,7 @@ jobs:
             
             # Show running containers
             echo "📊 Running containers:"
-            docker compose -f docker/compose.prod.yml ps
+            docker ps
             
             # Cleanup old images
             echo "🧹 Cleaning up old Docker images..."
