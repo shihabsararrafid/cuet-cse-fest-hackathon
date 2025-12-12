@@ -2,9 +2,13 @@ name: delineate
 
 services:
   delineate-app:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.prod
+    # Use pre-built image from GitHub Container Registry
+    # Replace YOUR-GITHUB-USERNAME with your actual GitHub username
+    image: ghcr.io/shihabsararrafid/cuet-micro-ops-hackathon:latest
+    # Uncomment below to build locally instead
+    # build:
+    #   context: ..
+    #   dockerfile: docker/Dockerfile.prod
     ports:
       - "3000:3000"
     env_file:

@@ -1,0 +1,132 @@
+name: Deploy to VPS
+
+on:
+  workflow_run:
+    workflows: ["CID"]
+    types:
+      - completed
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-24.04
+    # Only deploy if CI workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Deployment started
+        run: |
+          echo "### 🚀 Deployment Started" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production VPS" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+
+            echo "🔄 Starting deployment..."
+
+            # Navigate to app directory
+            cd /opt/apps/cuet-micro-ops-hackthon-2025 || exit 1
+
+            # Pull latest code (for docker-compose.yml updates)
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            # Login to GitHub Container Registry
+            echo "🔐 Logging in to GitHub Container Registry..."
+            echo "${{ secrets.PERSONAL_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+            # Pull latest Docker images
+            echo "🐳 Pulling latest Docker images..."
+            docker-compose -f docker/compose.prod.yml pull
+
+            # Stop old containers
+            echo "🛑 Stopping old containers..."
+            docker-compose -f docker/compose.prod.yml down
+
+            # Start new containers
+            echo "🚀 Starting new containers..."
+            docker-compose -f docker/compose.prod.yml up -d
+
+            # Wait for application to start
+            echo "⏳ Waiting for application to start..."
+            sleep 15
+
+            # Health check
+            echo "🏥 Running health check..."
+            if curl -f http://localhost:3000/health; then
+              echo "✅ Health check passed!"
+            else
+              echo "❌ Health check failed!"
+              exit 1
+            fi
+
+            # Show running containers
+            echo "📊 Running containers:"
+            docker-compose -f docker/compose.prod.yml ps
+
+            # Cleanup old images
+            echo "🧹 Cleaning up old Docker images..."
+            docker image prune -af --filter "until=24h" || true
+
+            echo "✅ Deployment completed successfully!"
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo "### ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Deployed to production" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** http://${{ secrets.VPS_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed Image:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/${{ github.repository_owner }}/cuet-micro-ops-hackathon:latest" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Deployment failed
+        if: failure()
+        run: |
+          echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Rollback instructions:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "cd /opt/apps/cuet-micro-ops-hackthon-2025" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose -f docker/compose.prod.yml down" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose -f docker/compose.prod.yml up -d" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit 1
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment notification: SUCCESS"
+          else
+            echo "❌ Deployment notification: FAILED"
+          fi
