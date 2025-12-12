@@ -27,7 +27,10 @@ jobs:
             set -e
             echo "🔄 Starting deployment..."
 
+             pwd
 
+
+             echo "Starting"
 
 
             # Make script executable and run it
